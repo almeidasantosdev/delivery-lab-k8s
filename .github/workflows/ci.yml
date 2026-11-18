@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: kubeconform
+        run: |
+          curl -sSL -o kubeconform.tar.gz "https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz"
+          tar -xzf kubeconform.tar.gz
+          ./kubeconform -strict -summary -kubernetes-version 1.34.0 \
+            k8s/namespace.yaml \
+            k8s/database.yaml \
+            k8s/api.yaml \
+            k8s/hpa.yaml
