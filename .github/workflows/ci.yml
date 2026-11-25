@@ -72,14 +72,14 @@ jobs:
 
       - name: Instalar Kind e kubectl
         run: |
-          curl -fsSL -o ./kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64"
-          chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
+          curl -fsSL -o /tmp/kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64"
+          chmod +x /tmp/kind
+          sudo mv /tmp/kind /usr/local/bin/kind
           kind version
           version=$(curl -fsSL https://dl.k8s.io/release/stable-1.34.txt)
-          curl -fsSL -o ./kubectl "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
-          chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/kubectl
+          curl -fsSL -o /tmp/kubectl "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
+          chmod +x /tmp/kubectl
+          sudo mv /tmp/kubectl /usr/local/bin/kubectl
           kubectl version --client
 
       - name: Cluster, imagem e carga
@@ -114,6 +114,10 @@ jobs:
       - name: Diagnostico
         if: failure()
         run: |
+          if ! command -v kind >/dev/null 2>&1 || ! kind get clusters 2>/dev/null | grep -qx delivery; then
+            echo "cluster delivery nao chegou a existir"
+            exit 0
+          fi
           kubectl -n delivery get pods,svc,pvc,sts,deploy -o wide || true
           kubectl -n delivery describe pods || true
           kubectl -n delivery logs deploy/api --all-containers --tail=100 || true
