@@ -169,7 +169,7 @@ helm template delivery .\charts\delivery-lab --namespace delivery --set worker.e
 
 O worker espera a porta do Postgres e a do RabbitMQ antes de abrir o processo. A API espera so o Postgres. Os dois aplicam `sql/001_init.sql` ao subir. As filas nao tem manifesto: o worker as declara ao conectar.
 
-O container do RabbitMQ usa o uid 100 e o gid 101, que sao os da imagem `rabbitmq:3.13-alpine`. O Postgres usa o uid 70, o da imagem `postgres:16-alpine`.
+O container do RabbitMQ usa o uid 100 e o gid 101, que sao os da imagem `rabbitmq:3.13-alpine`. O Postgres usa o uid 70, o da imagem `postgres:16-alpine`. A API e o worker usam o uid 1000, o do usuario `node` na imagem. O chart grava esse numero porque o Kubernetes recusa `runAsNonRoot` quando a imagem so diz o nome do usuario.
 
 ### Segredos de exemplo
 
@@ -203,7 +203,7 @@ Se `kubectl top nodes` ja responder, o cluster tem metrics-server e o segundo `k
 oc expose svc/api
 ```
 
-Num projeto com a politica restricted, o uid 70 do Postgres e o uid 100 do RabbitMQ podem ser recusados. Nesse caso o volume precisa de um uid dentro da faixa do projeto, e os `runAsUser` do chart precisam acompanhar essa faixa.
+Num projeto com a politica restricted, o uid 70 do Postgres, o uid 100 do RabbitMQ e o uid 1000 da aplicacao podem ser recusados. Nesse caso o volume precisa de um uid dentro da faixa do projeto, e os `runAsUser` do chart precisam acompanhar essa faixa.
 
 ## CI
 
