@@ -1,0 +1,16 @@
+A release {{ .Release.Name }} ficou no namespace {{ .Release.Namespace }}.
+
+{{- if .Values.api.enabled }}
+
+API: Service api, porta {{ .Values.api.service.port }}.
+No Kind deste repositorio, o NodePort {{ .Values.api.service.nodePort }} aparece em http://localhost:3000/health.
+{{- end }}
+
+{{- if .Values.worker.enabled }}
+
+Worker: Service worker, GET /health na porta {{ .Values.worker.healthPort }}.
+  kubectl -n {{ .Release.Namespace }} port-forward svc/worker {{ .Values.worker.healthPort }}:{{ .Values.worker.healthPort }}
+{{- end }}
+
+Os Secrets database e rabbitmq guardam o usuario e a senha de exemplo do laboratorio.
+Eles nao servem para outro ambiente.

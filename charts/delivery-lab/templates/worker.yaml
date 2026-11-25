@@ -1,0 +1,98 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "delivery-lab.labels" (dict "component" "worker" "root" .) | nindent 4 }}
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      {{- include "delivery-lab.selectorLabels" (dict "component" "worker" "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "delivery-lab.labels" (dict "component" "worker" "root" .) | nindent 8 }}
+      annotations:
+        checksum/database: {{ printf "%s:%s:%s" .Values.postgres.user .Values.postgres.password .Values.postgres.database | sha256sum }}
+        checksum/rabbitmq: {{ printf "%s:%s" .Values.rabbitmq.user .Values.rabbitmq.password | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- include "delivery-lab.podSecurity" . | nindent 8 }}
+      initContainers:
+        {{- include "delivery-lab.wait" (dict "image" (include "delivery-lab.appImage" .) "pullPolicy" .Values.image.pullPolicy "targets" "postgres:5432,rabbitmq:5672") | nindent 8 }}
+      containers:
+        - name: worker
+          image: {{ include "delivery-lab.appImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.worker.command | nindent 12 }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.worker.healthPort }}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: database
+                  key: DATABASE_URL
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq
+                  key: RABBITMQ_URL
+            - name: WORKER_HEALTH_PORT
+              value: {{ .Values.worker.healthPort | quote }}
+            - name: WORKER_INTERVAL_MS
+              value: {{ .Values.worker.intervalMs | quote }}
+            - name: BACKOFF_BASE_MS
+              value: {{ .Values.worker.backoffBaseMs | quote }}
+            {{- range .Values.worker.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          securityContext:
+            {{- include "delivery-lab.containerSecurity" . | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "delivery-lab.labels" (dict "component" "worker" "root" .) | nindent 4 }}
+spec:
+  selector:
+    {{- include "delivery-lab.selectorLabels" (dict "component" "worker" "root" .) | nindent 4 }}
+  ports:
+    - name: health
+      port: {{ .Values.worker.healthPort }}
+      targetPort: health
+{{- end }}
