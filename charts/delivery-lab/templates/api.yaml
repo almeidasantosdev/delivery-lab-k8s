@@ -24,6 +24,9 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
       securityContext:
         {{- include "delivery-lab.podSecurity" . | nindent 8 }}
+        # A imagem declara USER node. O Kubernetes so aceita runAsNonRoot com uid numerico.
+        runAsUser: 1000
+        runAsGroup: 1000
       initContainers:
         {{- include "delivery-lab.wait" (dict "image" (include "delivery-lab.appImage" .) "pullPolicy" .Values.image.pullPolicy "targets" "postgres:5432") | nindent 8 }}
       containers:
