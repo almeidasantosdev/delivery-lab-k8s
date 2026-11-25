@@ -1,0 +1,13 @@
+apiVersion: v2
+name: delivery-lab
+description: Laboratorio local do Delivery Lab no Kubernetes. API NestJS, worker, RabbitMQ e Postgres.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/almeidasantosdev/delivery-lab-k8s
+sources:
+  - https://github.com/almeidasantosdev/delivery-lab-k8s
+  - https://github.com/almeidasantosdev/delivery-lab
+maintainers:
+  - name: Kleidson Almeida Santos
+    url: https://github.com/almeidasantosdev

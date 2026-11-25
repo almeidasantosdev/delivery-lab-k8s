@@ -1,0 +1,93 @@
+# Valores do laboratorio local. A senha "delivery" e a mesma do Compose
+# do Delivery Lab. Ela nao e um segredo de producao.
+
+image:
+  repository: delivery-lab
+  tag: local
+  pullPolicy: IfNotPresent
+
+api:
+  enabled: true
+  # Usado somente com api.hpa.enabled false. Com o HPA ligado, o minimo e api.hpa.minReplicas.
+  replicas: 1
+  command:
+    - node
+    - dist/main.js
+  port: 3000
+  terminationGracePeriodSeconds: 20
+  service:
+    type: NodePort
+    port: 3000
+    nodePort: 30080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  extraEnv: []
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilization: 70
+
+worker:
+  enabled: true
+  replicas: 1
+  command:
+    - node
+    - dist/worker-main.js
+  healthPort: 3001
+  intervalMs: 2000
+  backoffBaseMs: 1000
+  terminationGracePeriodSeconds: 30
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  extraEnv: []
+
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  user: delivery
+  password: delivery
+  database: delivery
+  persistence:
+    size: 1Gi
+    # Vazio usa a StorageClass padrao do cluster. No Kind 0.33 ela se chama standard.
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+rabbitmq:
+  enabled: true
+  image:
+    repository: rabbitmq
+    tag: 3.13-alpine
+    pullPolicy: IfNotPresent
+  user: delivery
+  password: delivery
+  persistence:
+    size: 1Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi

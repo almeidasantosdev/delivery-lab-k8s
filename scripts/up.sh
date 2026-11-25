@@ -9,15 +9,30 @@ if [ ! -f "$lab/docker/Dockerfile" ]; then
   exit 1
 fi
 
+for cmd in docker kind kubectl helm; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Falta o comando $cmd." >&2
+    exit 1
+  fi
+done
+
 docker build -t delivery-lab:local -f "$lab/docker/Dockerfile" "$lab"
 
 if ! kind get clusters | grep -qx delivery; then
   kind create cluster --config "$root/kind/cluster.yaml"
 fi
 
+kind export kubeconfig --name delivery
 kind load docker-image delivery-lab:local --name delivery
-kubectl apply -k "$root/k8s"
+
+helm upgrade --install delivery "$root/charts/delivery-lab" \
+  --namespace delivery \
+  --create-namespace \
+  --wait \
+  --timeout 10m
+
 kubectl apply -f "$root/kind/metrics-server.yaml"
-kubectl -n delivery rollout status deploy/postgres --timeout=180s
-kubectl -n delivery rollout status deploy/api --timeout=180s
+kubectl -n kube-system rollout status deploy/metrics-server --timeout=180s
+
 echo "API em http://localhost:3000/health"
+echo "Worker: kubectl -n delivery port-forward svc/worker 3001:3001"
