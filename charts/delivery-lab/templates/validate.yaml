@@ -1,0 +1,6 @@
+{{- if and .Values.worker.enabled (not .Values.rabbitmq.enabled) }}
+{{- fail "worker.enabled exige rabbitmq.enabled, porque o worker le RABBITMQ_URL" }}
+{{- end }}
+{{- if and (or .Values.api.enabled .Values.worker.enabled) (not .Values.postgres.enabled) }}
+{{- fail "api e worker exigem postgres.enabled, porque os dois processos leem DATABASE_URL" }}
+{{- end }}
